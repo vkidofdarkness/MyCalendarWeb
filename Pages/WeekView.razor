@@ -1,0 +1,84 @@
+﻿@page "/weekview"
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<div class="week-view-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="week-navigation">
+        <button @onclick="PrevWeek" style="font-family: 'Segoe MDL2 Assets'; font-size: 20px; background-color: #0078D7; color: white; border: none; padding: 10px 15px; cursor: pointer; margin-right: 10px; border-radius: 5px;">&#xE72B;</button>
+        <button @onclick="NextWeek" style="font-family: 'Segoe MDL2 Assets'; font-size: 20px; background-color: #0078D7; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px;">&#xE72A;</button>
+    </div>
+    <h3 class="day-label" style="margin: 0; flex-grow: 1; text-align: center;">@WeekRange</h3>
+</div>
+
+<table class="week-view-table" style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr>
+            @for (var day = StartOfWeek; day < StartOfWeek.AddDays(7); day = day.AddDays(1))
+            {
+                    <th style="border-right: 1px solid #ddd; padding: 8px; text-align: center;">@day.DayOfWeek</th>
+            }
+        </tr>
+        <tr>
+            @for (var day = StartOfWeek; day < StartOfWeek.AddDays(7); day = day.AddDays(1))
+            {
+                    <th style="border-right: 1px solid #ddd; padding: 8px; text-align: center;">@day.Day</th>
+            }
+        </tr>
+    </thead>
+   <tbody>
+    <tr>
+            @for (var day = StartOfWeek; day < StartOfWeek.AddDays(7); day = day.AddDays(1))
+            {
+                <td style="border-right: 1px solid #ddd; padding: 8px; text-align: center;">
+                    @foreach (var task in GetTasksForDay(day))
+                    {
+                            <div>@task.Name: @task.Description</div>
+                    }
+                </td>
+            }
+    </tr>
+</tbody>
+</table>
+
+@code {
+    private DateTime Today = DateTime.Today;
+    private DateTime StartOfWeek => Today.AddDays(-(int)Today.DayOfWeek + (int)DayOfWeek.Monday);
+    private List<TaskModel> tasks = new List<TaskModel>();
+
+    public string WeekRange => $"{StartOfWeek:dd.MM.yyyy} - {StartOfWeek.AddDays(6):dd.MM.yyyy}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await LocalStorage.GetItemAsync<List<TaskModel>>("tasks") ?? new List<TaskModel>();
+    }
+
+    private void PrevWeek()
+    {
+        Today = Today.AddDays(-7);
+        LoadTasksForWeek();
+    }
+
+    private void NextWeek()
+    {
+        Today = Today.AddDays(7);
+        LoadTasksForWeek();
+    }
+
+    private async void LoadTasksForWeek()
+    {
+        tasks = await LocalStorage.GetItemAsync<List<TaskModel>>("tasks") ?? new List<TaskModel>();
+        StateHasChanged(); // Обновить UI
+    }
+
+    private IEnumerable<TaskModel> GetTasksForDay(DateTime day)
+    {
+        return tasks.Where(t => t.Date.Date == day.Date);
+    }
+
+    public class TaskModel
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public DateTime Date { get; set; }
+    }
+}

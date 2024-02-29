@@ -1,0 +1,86 @@
+﻿@page "/"
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<div class="month-view-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="buttons" style="display: flex;">
+        <button @onclick="PrevMonth" style="font-family: 'Segoe MDL2 Assets'; font-size: 20px; background-color: #0078D7; color: white; border: none; padding: 10px 15px; cursor: pointer; margin-right: 10px; border-radius: 5px;">&#xE72B;</button>
+        <button @onclick="NextMonth" style="font-family: 'Segoe MDL2 Assets'; font-size: 20px; background-color: #0078D7; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px;">&#xE72A;</button>
+    </div>
+    <h3 class="day-label" style="margin: 0; flex-grow: 1; text-align: center;">@MonthLabel</h3>
+</div>
+
+<div class="weekdays">
+    @foreach (var day in Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>())
+    {
+            <div class="weekday">@day.ToString().Substring(0, 3)</div>
+    }
+</div>
+
+<div class="days-grid">
+    @for (int i = 1; i <= StartDayOfMonth; i++)
+    {
+            <div class="day"></div>
+    }
+    @for (int day = 1; day <= DaysInMonth; day++)
+    {
+            <div class="day" @onclick="() => NavigateToDay(day)">
+            @day
+            @foreach (var task in tasks.Where(t => t.Date.Year == _year && t.Date.Month == _month && t.Date.Day == day))
+            {
+                        <div>@task.Name</div>
+            }
+            </div>
+    }
+</div>
+
+@code {
+    private List<TaskModel> tasks = new();
+    private int _month = DateTime.Now.Month;
+    private int _year = DateTime.Now.Year;
+    private int DaysInMonth => DateTime.DaysInMonth(_year, _month);
+    private int StartDayOfMonth => (int)new DateTime(_year, _month, 1).DayOfWeek;
+    private string MonthLabel => new DateTime(_year, _month, 1).ToString("MMMM yyyy");
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await LocalStorage.GetItemAsync<List<TaskModel>>("tasks") ?? new List<TaskModel>();
+    }
+
+    private void PrevMonth()
+    {
+        _month--;
+        if (_month < 1)
+        {
+            _month = 12;
+            _year--;
+        }
+        ReloadTasks();
+    }
+
+    private void NextMonth()
+    {
+        _month++;
+        if (_month > 12)
+        {
+            _month = 1;
+            _year++;
+        }
+        ReloadTasks();
+    }
+
+    private void ReloadTasks() => StateHasChanged(); // Загрузка задач необходима, если данные могут измениться. В противном случае достаточно обновить состояние.
+
+    private void NavigateToDay(int day)
+    {
+        // Здесь может быть логика для перехода к представлению конкретного дня
+        // Например: NavigationManager.NavigateTo($"/dayview/{_year}/{_month}/{day}");
+    }
+
+    public class TaskModel
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public DateTime Date { get; set; }
+    }
+}

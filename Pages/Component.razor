@@ -1,0 +1,115 @@
+﻿@page "/calendar"
+
+@using System.Globalization
+
+<h1>Simple Calendar App</h1>
+
+<div class="calendar">
+    <div class="month">
+        <div class="buttons">
+        <button @onclick="ShowPreviousMonth">Previous</button>
+        <button @onclick="ShowNextMonth">Next</button>
+        </div>
+        <h2>@currentMonthYear</h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                @foreach (var day in daysOfWeek)
+                {
+                        <th>@day</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var week in weeks)
+            {
+                    <tr>
+                    @foreach (var day in week)
+                    {
+                                <td>@day</td>
+                    }
+                    </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private DateTime currentMonth = DateTime.Today;
+    private string currentMonthYear => currentMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
+    private List<string> daysOfWeek = DateTimeFormatInfo.CurrentInfo.ShortestDayNames.Skip(1).ToList();
+    private List<List<int?>> weeks = new List<List<int?>>();
+
+    protected override void OnInitialized()
+    {
+        UpdateWeeks();
+    }
+
+    private void ShowPreviousMonth()
+    {
+        currentMonth = currentMonth.AddMonths(-1);
+        UpdateWeeks();
+    }
+
+    private void ShowNextMonth()
+    {
+        currentMonth = currentMonth.AddMonths(1);
+        UpdateWeeks();
+    }
+
+    private void UpdateWeeks()
+    {
+        weeks.Clear();
+
+        var firstDayOfMonth = new DateTime(currentMonth.Year, currentMonth.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        var currentDay = firstDayOfMonth;
+        var currentWeek = new List<int?>();
+
+        while (currentDay <= lastDayOfMonth)
+        {
+            if (currentDay.DayOfWeek == DayOfWeek.Sunday && currentWeek.Count > 0)
+            {
+                weeks.Add(currentWeek);
+                currentWeek = new List<int?>();
+            }
+
+            currentWeek.Add(currentDay.Day);
+            currentDay = currentDay.AddDays(1);
+        }
+
+        if (currentWeek.Count > 0)
+        {
+            weeks.Add(currentWeek);
+        }
+    }
+}
+
+<style>
+    .calendar {
+        text-align: center;
+    }
+
+    .month {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 8px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+</style>

@@ -1,0 +1,53 @@
+﻿@page "/uploaddata"
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<h3>Импорт расписания с my.itmo</h3>
+
+<div class="mb-3">
+    <label for="username" class="form-label">ИСУ:</label>
+    <InputText id="username" placeholder="ИСУ" class="form-control" @bind-Value="username" />
+</div>
+<div class="mb-3">
+    <label for="password" class="form-label">Пароль:</label>
+    <InputText id="password" type="password" placeholder="Пароль" class="form-control" @bind-Value="password" />
+</div>
+<div class="mb-3">
+    <label for="startDate" class="form-label">Начало периода:</label>
+    <InputDate id="startDate" class="form-control" @bind-Value="startDate" />
+</div>
+<div class="mb-3">
+    <label for="endDate" class="form-label">Конец периода:</label>
+    <InputDate id="endDate" class="form-control" @bind-Value="endDate" />
+</div>
+
+<button type="submit" class="btn btn-primary" @onclick="Upload">Загрузить</button>
+
+@if (!string.IsNullOrEmpty(message))
+{
+        <p>@message</p>
+}
+
+@code {
+
+    private string username;
+    private string password;
+    private DateTime startDate = DateTime.Today;
+    private DateTime endDate = DateTime.Today;
+    private string message;
+
+    private async Task Upload()
+    {
+        try
+        {
+            var apiService = new MyCalendarWeb.ApiService();
+            var accessToken = await apiService.GetAccessToken(username, password);
+            var lessons = await apiService.GetRawLessons(accessToken, startDate, endDate);
+            await LocalStorage.SetItemAsync("lessons", lessons);
+            message = "Данные успешно загружены.";
+        }
+        catch (Exception ex)
+        {
+            message = $"Ошибка: {ex.Message}";
+        }
+    }
+}

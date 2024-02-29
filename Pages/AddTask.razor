@@ -1,0 +1,61 @@
+﻿@page "/addtask"
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<h3>Добавить задачу</h3>
+
+<EditForm Model="@task" OnValidSubmit="SaveTask">
+    <div class="mb-3">
+        <label for="taskName" class="form-label">Название задачи</label>
+        <InputText id="taskName" class="form-control" @bind-Value="task.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="taskDescription" class="form-label">Описание</label>
+        <InputTextArea id="taskDescription" class="form-control" @bind-Value="task.Description" />
+    </div>
+    <div class="mb-3">
+        <label for="taskDate" class="form-label">Дата</label>
+        <InputDate id="taskDate" class="form-control" @bind-Value="task.Date" />
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <button class="btn btn-secondary" @onclick="Cancel">Отмена</button>
+</EditForm>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert alert-info mt-2">@message</div>
+}
+
+@code {
+    private TaskModel task = new TaskModel();
+    private string message;
+
+    private async Task SaveTask()
+    {
+        if (!string.IsNullOrWhiteSpace(task.Name) && task.Date != default)
+        {
+            var tasks = await LocalStorage.GetItemAsync<List<TaskModel>>("tasks") ?? new List<TaskModel>();
+            tasks.Add(task);
+            await LocalStorage.SetItemAsync("tasks", tasks);
+            
+            message = "Задача добавлена.";
+            task = new TaskModel(); // Очистить форму после добавления задачи
+        }
+        else
+        {
+            message = "Пожалуйста, введите название и дату.";
+        }
+    }
+
+    private void Cancel()
+    {
+        task = new TaskModel();
+        message = string.Empty;
+    }
+
+    public class TaskModel
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public DateTime Date { get; set; } = DateTime.Today;
+    }
+}

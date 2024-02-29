@@ -1,0 +1,73 @@
+﻿@page "/dailyview"
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<div class="daily-view-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="buttons" style="display: flex;">
+        <button @onclick="PrevDay" style="font-family: 'Segoe MDL2 Assets'; font-size: 20px; background-color: #0078D7; color: white; border: none; padding: 10px 15px; cursor: pointer; margin-right: 10px; border-radius: 5px;">&#xE72B;</button>
+        <button @onclick="NextDay" style="font-family: 'Segoe MDL2 Assets'; font-size: 20px; background-color: #0078D7; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px;">&#xE72A;</button>
+    </div>
+    <h3 class="day-label" style="margin: 0; flex-grow: 1; text-align: center;">@DayLabel</h3>
+</div>
+
+@if (tasksForDate.Any())
+{
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; border-bottom: 2px solid #ddd; padding: 8px; border-right: 1px solid #ddd;">Задача</th>
+                    <th style="text-align: left; border-bottom: 2px solid #ddd; padding: 8px;">Описание</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var task in tasksForDate)
+            {
+                        <tr>
+                            <td style="border-bottom: 1px solid #ddd; padding: 8px; border-right: 1px solid #ddd;">@task.Name</td>
+                            <td style="border-bottom: 1px solid #ddd; padding: 8px;">@task.Description</td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+}
+else
+{
+        <div style="text-align: center;">Нет запланированных событий.</div>
+}
+
+@code {
+    private DateTime currentDate = DateTime.Today;
+    private List<TaskModel> tasksForDate = new();
+
+    private string DayLabel => currentDate.ToLongDateString();
+
+    private async Task PrevDay()
+    {
+        currentDate = currentDate.AddDays(-1);
+        await LoadTasksForDate();
+    }
+
+    private async Task NextDay()
+    {
+        currentDate = currentDate.AddDays(1);
+        await LoadTasksForDate();
+    }
+
+    private async Task LoadTasksForDate()
+    {
+        var allTasks = await LocalStorage.GetItemAsync<List<TaskModel>>("tasks") ?? new List<TaskModel>();
+        tasksForDate = allTasks.Where(task => task.Date.Date == currentDate.Date).ToList();
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasksForDate();
+    }
+
+    public class TaskModel
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public DateTime Date { get; set; }
+    }
+}
